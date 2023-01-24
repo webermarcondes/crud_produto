@@ -3,6 +3,9 @@ package br.com.crudproduto.exceptions;
 import java.io.Serializable;
 import java.util.Date;
 
+/*
+ Estrutura básica de uma Exceccão disparada em tempo de execução do código
+ */
 public class ExceptionResponse implements Serializable {
 
 

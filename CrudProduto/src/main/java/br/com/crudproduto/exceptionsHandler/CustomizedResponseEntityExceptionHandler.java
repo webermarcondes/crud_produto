@@ -14,11 +14,20 @@ import br.com.crudproduto.exceptions.ExceptionResponse;
 import br.com.crudproduto.exceptions.NotNumericException;
 import br.com.crudproduto.exceptions.ResourceNotFoundException;
 
+/*
+CustomizedResponseEntityExceptionHandler cuida de todas as exceções geradas em tempo de execução, a anotação
+@ControllerAdvice faz com que apenas esta classe desempenhe este papel.
+ */
 
 
 @ControllerAdvice
 public class CustomizedResponseEntityExceptionHandler extends ResponseEntityExceptionHandler{
 	
+	
+	/*
+	 Quando a exceção do java é disparada a anotação @ExceptionHandler pega classe referente a exceccão
+	 e faz com que o método abaixo dela gere um retorno apropriado a esta exceccão.
+	 */
 	@ExceptionHandler(NotNumericException.class)
 	public final ResponseEntity<ExceptionResponse> 
 		handleNotNumericExceptions(Exception ex, WebRequest request) {
@@ -28,7 +37,7 @@ public class CustomizedResponseEntityExceptionHandler extends ResponseEntityExce
 				request.getDescription(false)
 				);
 		
-		return new ResponseEntity<>(exceptionResponse, HttpStatus.BAD_REQUEST);
+		return new ResponseEntity<>(exceptionResponse, HttpStatus.BAD_REQUEST); // a ResponseEntity sempre deve conter o conteúdo de resposta e o código para o qual a resposta deve ser dada.
 	}
 	
 	

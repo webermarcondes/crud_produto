@@ -1,7 +1,6 @@
 package br.com.crudproduto.controller;
 
 import java.util.List;
-import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -13,94 +12,108 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import br.com.crudproduto.dao.ProdutoDAO;
-import br.com.crudproduto.exceptions.NotNumericException;
-import br.com.crudproduto.model.Produto;
-import br.com.crudproduto.verifications.numericValidator;
+import br.com.crudproduto.data.vo.v1.ProdutoVO;
+import br.com.crudproduto.data.vo.v2.ProdutoVOV2;
+import br.com.crudproduto.services.ProdutoServices;
+
+
+/*
+ A classe Controller contém todos os métodos da API, ela recebe as requisições para
+ para os métodos especificos e retorna (ou não) um conteúdo ou excecão.
+ 
+ a anotação @RestController torna a classe um controller
+ */
 
 @RestController
+
+/*
+ A anotação @RequestMapping mapeia uma classe/método para que este seja utilizado caso o valor passado
+ no campo value seja identificado na URL fornecida pelo usuário
+ 
+ Campos que @RequestMapping tem alem do value:
+ 
+ 
+ method: especifica para qual verbo HTTP a requisição foi mapeada;
+ consumes: especifica o conteúdo que a requisição consome para realizar suas operações;
+ produces: especifica o conteúdo que a requisição retorna (se tudo der certo) após finalizar suas operações;
+ */
+
 @RequestMapping(value="/produtos")
 public class CrudProdutoController {
 	
+	@Autowired  //AutoWired está relacionado com injeçao de dependências, veja mais na classe ProdutoServices
+	ProdutoServices service;
 	
-	Logger logger = Logger.getLogger(CrudProdutoController.class.toString());
 	
-
-	@Autowired
-	ProdutoDAO produtoDAO;
-	
-	@GetMapping(produces=MediaType.APPLICATION_JSON_VALUE)
-	public List<Produto> buscarTodos() {
-		
-		logger.info("buscando todos os produtos cadastrados");
-		
-		return produtoDAO.buscarTodos();
+	@GetMapping(produces=MediaType.APPLICATION_JSON_VALUE) //GetMapping é semelhante a um @RequestMapping com o valor do method se referindo ao verbo GET. 
+	public List<ProdutoVO> findAll() {
+				
+		return service.findAll();
 	}
 	
-	@GetMapping(value="/buscaporid/{id}")
-	public Produto buscarPorID(@PathVariable(value="id") String id) {
-		
-		if (!numericValidator.isNumeric(id)) {
-			throw new NotNumericException("Informe um valor númerico pro ID");
-		}
-		
-		logger.info("buscando o produto de id " + id);
-		
-		return produtoDAO.buscaPorId(Long.parseLong(id));
+	@GetMapping(value="/findbyid/{id}")
+	public ProdutoVO findById(@PathVariable(value="id") String id) {
+				
+		return service.findById(id);
 	}
 	
-	@GetMapping(value="/buscaportipo/{tipo}",
+	@GetMapping(value="/findbytipo/{tipo}",
 				produces=MediaType.APPLICATION_JSON_VALUE)
-	public List<Produto> buscaPorTipo(@PathVariable(value="tipo") String tipo) {
-		return produtoDAO.buscaPorTipo(tipo);
+	public List<ProdutoVO> findByTipo(@PathVariable(value="tipo") String tipo) {
+		
+		return service.findByTipo(tipo);
 	}
 	
-	@GetMapping(value="/buscaporvalor/{valor_min}/{valor_max}",
+	@GetMapping(value="/findbyvalor/{valor_min}",
 				produces=MediaType.APPLICATION_JSON_VALUE)
-	public List<Produto> buscaPorValor(@PathVariable(value="valor_min") String valor_min,
-										@PathVariable(value="valor_max") String valor_max) {
+	public List<ProdutoVO> findByValor(@PathVariable(value="valor_min") String valor_min,
+									@RequestParam(value="valor_max", defaultValue="none") String valor_max) {
+	
+		return service.findByValor(valor_min, valor_max);
 		
-		if (!numericValidator.isNumeric(valor_min) || !numericValidator.isNumeric(valor_max)) {
-			throw new NotNumericException("informe apenas valores númericos");
-		}
-		
-		return produtoDAO.buscaporValor(Double.parseDouble(valor_min), Double.parseDouble(valor_max));
 	}
 	
-	@PostMapping(value="/criar",
+	@PostMapping(value="/create",    //@PostMapping é semelhante a @RequestMapping com o campo method se referindo ao verbo POST.
 				consumes=MediaType.APPLICATION_JSON_VALUE,
 				produces=MediaType.APPLICATION_JSON_VALUE)
-	public Produto criarProduto(@RequestBody Produto produto) {
+	public ProdutoVO createProduto(@RequestBody ProdutoVO produto) {
 		
-		logger.info("criando um produto....");
 		
-		return produtoDAO.criar(produto);
+		
+		return service.create(produto);
 	}
 	
-	@PutMapping(value="/atualizar",
+	@PostMapping(value="/createv2",
 			consumes=MediaType.APPLICATION_JSON_VALUE,
 			produces=MediaType.APPLICATION_JSON_VALUE)
-	public Produto atualizarProduto(@RequestBody Produto produto) {
+	public ProdutoVOV2 createProduto(@RequestBody ProdutoVOV2 produto) {
+		/*
+		 endPoint versionado.
+		 
+		 a vantagem do versionamento é fazer com que duas versões de um mesmo
+		 endPoint fiquem ativas ao mesmo tempo, até que todos os usuários da versão antiga consigam
+		 migrar pra nova.*/
 		
-		logger.info("atualizando dados de um produto.....");
+		return service.createV2(produto);
+	}
+	
+	@PutMapping(value="/update", //@PutMapping é semelhante a @RequestMapping com o campo method se referindo ao verbo PUT.
+			consumes=MediaType.APPLICATION_JSON_VALUE,
+			produces=MediaType.APPLICATION_JSON_VALUE)
+	public ProdutoVO atualizarProduto(@RequestBody ProdutoVO produto) {
 		
-		return produtoDAO.atualizar(produto);
+		return service.update(produto);
 }
-	@DeleteMapping(value="/apagar/{id}")
-	public ResponseEntity<?> apagarProduto(@PathVariable(value="id") String id) {
+	@DeleteMapping(value="/delete/{id}")  //@DeleteMapping é semelhante a @RequestMapping com o campo method se referindo verbo delete.
+	public ResponseEntity<?> deleteProduto(@PathVariable(value="id") String id) {
+		 //classe  deleteProduto com retorno de código padrão 204(No content) para operações de delete.
+			
+		service.delete(id); 
 		
-		if (!numericValidator.isNumeric(id)) {
-			throw new NotNumericException("Informe um valor númerico pro ID");
-		}
-		
-		
-		logger.info("apagando um produto.....");
-		
-		produtoDAO.apagar(Long.parseLong(id));
-		
-		return ResponseEntity.noContent().build();	
+		return ResponseEntity.noContent().build();	  
 		}
 	
 }
